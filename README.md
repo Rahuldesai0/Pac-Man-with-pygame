@@ -8,7 +8,7 @@ Things already implemented:
 3. Textures
 4. Moving player with WASD
 5. Score system
-6. Ghost normal AI
+6. Ghost AI
 7. Lives System
 8. Game over losing
 

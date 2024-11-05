@@ -64,6 +64,10 @@ class Map:
             'O': pygame.image.load(TEXTURE_PATHS['O']),
             'R': pygame.image.load(TEXTURE_PATHS['R']),
             'E': pygame.image.load(TEXTURE_PATHS['E']),
+            'A': pygame.image.load(TEXTURE_PATHS['A']),
+            'M': pygame.image.load(TEXTURE_PATHS['M']),
+            'V': pygame.image.load(TEXTURE_PATHS['V']),
+            '!': pygame.image.load(TEXTURE_PATHS['!']),
         }
         for i in range(1, 25):
             wall_key = f'wall{i}'

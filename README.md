@@ -1,1 +1,1 @@
-This game uses pygame to create pac man game in python
+# Pac-Man-with-pygame

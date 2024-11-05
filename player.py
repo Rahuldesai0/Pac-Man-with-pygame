@@ -10,55 +10,75 @@ class Player(pygame.sprite.Sprite):
         self.rect = self.image.get_rect(topleft=(x * TILE_SIZE, y * TILE_SIZE))
         
         self.direction = pygame.Vector2(0, 0)
-        self.current_texture = "neutral"
-        self.frame_count = 0
+        self.next_direction = pygame.Vector2(0, 0)
         self.score = 0
+        self.speed = TILE_SIZE // 8  # Pac-Man's speed
+        self.frame_count = 0
+        self.current_texture = "neutral"
 
     def update(self):
-        current_tile_x = self.rect.x // TILE_SIZE
-        current_tile_y = self.rect.y // TILE_SIZE
+        # Determine current tile position
+        tile_x = self.rect.x // TILE_SIZE
+        tile_y = self.rect.y // TILE_SIZE
 
-        if self.direction.x > 0:
-            next_tile_x = (self.rect.x + self.rect.width) // TILE_SIZE
-        elif self.direction.x < 0:
-            next_tile_x = (self.rect.x - 1) // TILE_SIZE
-        else:
-            next_tile_x = current_tile_x
+        # Handle teleportation on row 17
+        if tile_y == 17:
+            if tile_x == 0 and self.direction == pygame.Vector2(-1, 0):
+                self.rect.x = (len(map_layout[0]) - 1) * TILE_SIZE  # Teleport to rightmost tile
+            elif tile_x == len(map_layout[0])-1 and self.direction == pygame.Vector2(1, 0):
+                self.rect.x = 0  # Teleport to leftmost tile
 
-        if self.direction.y > 0:
-            next_tile_y = (self.rect.y + self.rect.height) // TILE_SIZE
-        elif self.direction.y < 0:
-            next_tile_y = (self.rect.y - 1) // TILE_SIZE
-        else:
-            next_tile_y = current_tile_y
+        # If aligned to grid, try to set the new direction
+        if self.is_aligned_with_grid():
+            if self.can_move(tile_x, tile_y, self.next_direction):
+                self.direction = self.next_direction
 
-        if current_tile_y == 17:
-            if next_tile_x < 0:
-                self.rect.x = (len(map_layout[0]) - 1) * TILE_SIZE
-                next_tile_x = len(map_layout[0]) - 1
-            elif next_tile_x >= len(map_layout[0]):
-                self.rect.x = 0
-                next_tile_x = 0
+            # Stop movement if the next tile in the current direction is a wall
+            if not self.can_move(tile_x, tile_y, self.direction):
+                self.direction = pygame.Vector2(0, 0)
 
-        if not (0 <= next_tile_x < len(map_layout[0]) and 0 <= next_tile_y < len(map_layout)):
-            return
+        # Move Pac-Man in the current direction
+        self.rect.x += int(self.direction.x) * self.speed
+        self.rect.y += int(self.direction.y) * self.speed
 
-        tile_value = map_layout[next_tile_y][next_tile_x]
+        # Update score and eat dots/pellets
+        self.handle_scoring(tile_x, tile_y)
 
-        if not (1 <= tile_value <= 24 or tile_value == 27) :
-            self.rect.x += self.direction.x * TILE_SIZE // 16
-            self.rect.y += self.direction.y * TILE_SIZE // 16
-            
-            if tile_value in [25, 26]:
-                score_increment = 10 if tile_value == 25 else 50
-                self.score += score_increment
-                map_layout[next_tile_y][next_tile_x] = 0
-                
-            for i in range(6):
-                s = str(self.score).zfill(6)
-                map_layout[2][i] = ord(s[i])
-                
+        # Handle animation
+        self.animate_texture()
 
+    def is_aligned_with_grid(self):
+        """Check if Pac-Man is aligned to the grid."""
+        return self.rect.x % TILE_SIZE == 0 and self.rect.y % TILE_SIZE == 0
+
+    def can_move(self, tile_x, tile_y, direction):
+        """Check if Pac-Man can move in the desired direction."""
+        next_tile_x = tile_x + int(direction.x)
+        next_tile_y = tile_y + int(direction.y)
+
+        # Ensure the coordinates are within map bounds
+        if 0 <= next_tile_x < len(map_layout[0]) and 0 <= next_tile_y < len(map_layout):
+            # Return True if the tile is not a wall or ghost-only tile
+            return map_layout[next_tile_y][next_tile_x] not in range(1, 25) and map_layout[next_tile_y][next_tile_x] != 27
+        return False
+
+    def handle_scoring(self, tile_x, tile_y):
+        """Update score based on the current tile and consume dots/pellets."""
+        tile_value = map_layout[tile_y][tile_x]
+        if tile_value == 25:  # Dot
+            self.score += 10
+            map_layout[tile_y][tile_x] = 0
+        elif tile_value == 26:  # Power Pellet
+            self.score += 50
+            map_layout[tile_y][tile_x] = 0
+
+    
+        for i in range(6):
+            s = str(self.score).zfill(6)
+            map_layout[2][i] = ord(s[i])
+
+    def animate_texture(self):
+        """Animate Pac-Man's texture based on movement direction."""
         self.frame_count += 1
         if self.frame_count >= 10:
             self.frame_count = 0
@@ -77,11 +97,25 @@ class Player(pygame.sprite.Sprite):
                 self.current_texture = "neutral"
 
     def set_direction(self, direction):
+        """Set the next direction based on input."""
         if direction == "up":
-            self.direction = pygame.Vector2(0, -1)
+            self.next_direction = pygame.Vector2(0, -1)
         elif direction == "down":
-            self.direction = pygame.Vector2(0, 1)
+            self.next_direction = pygame.Vector2(0, 1)
         elif direction == "left":
-            self.direction = pygame.Vector2(-1, 0)
+            self.next_direction = pygame.Vector2(-1, 0)
         elif direction == "right":
-            self.direction = pygame.Vector2(1, 0)
+            self.next_direction = pygame.Vector2(1, 0)
+
+    def get_position(self):
+        return (self.rect.x // TILE_SIZE, self.rect.y // TILE_SIZE)
+    
+    def set_position(self, x, y):  
+        self.rect = self.image.get_rect(topleft=(x * TILE_SIZE, y * TILE_SIZE))
+
+    def get_direction(self):
+        if self.direction == pygame.Vector2(0, -1): return "up"
+        elif self.direction == pygame.Vector2(0, 1): return "down"
+        elif self.direction == pygame.Vector2(-1, 0): return "left"
+        elif self.direction == pygame.Vector2(1, 0): return "right"
+

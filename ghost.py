@@ -38,9 +38,25 @@ class Ghost(pygame.sprite.Sprite):
             dx = -self.speed
         elif self.direction == "right":
             dx = self.speed
-        
-        self.rect.x += dx
-        self.rect.y += dy
+
+        # Handle teleportation on row 17
+        current_tile_x, current_tile_y = self.get_tile_position()
+        if current_tile_y == 17:  # Check if the ghost is on the 17th row
+            if current_tile_x == 0 and self.direction == "left":
+                # Teleport from leftmost to rightmost
+                self.rect.x = (len(map_layout[0]) - 1) * TILE_SIZE
+            elif current_tile_x == len(map_layout[0]) - 1 and self.direction == "right":
+                # Teleport from rightmost to leftmost
+                self.rect.x = 0
+            else:
+                # Regular movement
+                self.rect.x += dx
+                self.rect.y += dy
+        else:
+            # Regular movement if not on the 17th row
+            self.rect.x += dx
+            self.rect.y += dy
+
 
     def is_aligned_with_grid(self):
         """Check if the ghost is aligned with the grid based on tile size."""
@@ -51,9 +67,11 @@ class Ghost(pygame.sprite.Sprite):
         x, y = self.get_tile_position()
         available_paths = sum(
             1 for dx, dy in [(-1, 0), (1, 0), (0, -1), (0, 1)]
-            if map_layout[y + dy][x + dx] not in range(1, 25) and map_layout[y + dy][x + dx] != 27
+            if 0 <= y + dy < len(map_layout) and 0 <= x + dx < len(map_layout[0]) and 
+            map_layout[y + dy][x + dx] not in range(1, 25) and map_layout[y + dy][x + dx] != 27
         )
         return available_paths >= 2
+
 
     def get_tile_position(self):
         """Gets the ghost's current position on the map grid."""

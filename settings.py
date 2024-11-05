@@ -36,7 +36,7 @@ TEXTURE_PATHS = {
     "A": os.path.join(TEXTURES_DIR, "A.png"),
     "M": os.path.join(TEXTURES_DIR, "M.png"),
     "V": os.path.join(TEXTURES_DIR, "V.png"),
-    "!": os.path.join(TEXTURES_DIR, "!.png"),
+    "!": os.path.join(TEXTURES_DIR, "exclamation.png"),
 }
 
 for i in range(1, 25):

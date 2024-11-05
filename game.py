@@ -42,10 +42,10 @@ class Game:
         self.player = Player(13, 26, self.textures)  # Reset the player        
 
         # Reset ghosts with their initial positions
-        self.red_ghost = Ghost(17, 12, self.textures['red_ghost'], (25, 0))
-        self.orange_ghost = Ghost(12, 12, self.textures['orange_ghost'], (2, 35))
-        self.cyan_ghost = Ghost(17, 17, self.textures['cyan_ghost'], (26, 36))
-        self.pink_ghost = Ghost(12, 12, self.textures['pink_ghost'], (2, 0))
+        self.red_ghost = Ghost(14, 14, self.textures['red_ghost'], (25, 0))
+        self.orange_ghost = Ghost(12, 14, self.textures['orange_ghost'], (2, 35))
+        self.cyan_ghost = Ghost(15, 14, self.textures['cyan_ghost'], (26, 36))
+        self.pink_ghost = Ghost(13, 14, self.textures['pink_ghost'], (2, 0))
 
         self.all_sprites = pygame.sprite.Group(self.player, self.red_ghost, self.orange_ghost, self.cyan_ghost, self.pink_ghost)
 

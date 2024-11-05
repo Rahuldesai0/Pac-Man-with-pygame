@@ -86,7 +86,8 @@ class Game:
 
                 # Determine pink target based on player direction
                 if player_direction == "up":
-                    pink_y -= 4  # Move up
+                    pink_y -= 4
+                    pink_x -= 4  # Move up
                 elif player_direction == "down":
                     pink_y += 4  # Move down
                 elif player_direction == "left":
@@ -98,7 +99,7 @@ class Game:
                 self.pink_ghost.set_target_tile(pink_target)
 
                 if player_direction == "up":
-                    ahead_x, ahead_y = player_x, player_y - 2
+                    ahead_x, ahead_y = player_x - 2, player_y - 2
                 elif player_direction == "down":
                     ahead_x, ahead_y = player_x, player_y + 2
                 elif player_direction == "left":

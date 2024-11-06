@@ -8,7 +8,8 @@ SOUNDS = {
     "eat": pygame.mixer.Sound("sounds/eat_dot.wav"),
     "player_death": pygame.mixer.Sound("sounds/player_death.wav"),
     "game_over": pygame.mixer.Sound("sounds/game_over.wav"),
-    "power_pellet": pygame.mixer.Sound("sounds/power_pellet_eat.wav")
+    "power_pellet": pygame.mixer.Sound("sounds/power_pellet_eat.wav"),
+    "victory": pygame.mixer.Sound("sounds/victory.wav")
 }
 
 # Functions to play sounds

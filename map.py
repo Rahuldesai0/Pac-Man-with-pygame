@@ -67,6 +67,8 @@ class Map:
             'A': pygame.image.load(TEXTURE_PATHS['A']),
             'M': pygame.image.load(TEXTURE_PATHS['M']),
             'V': pygame.image.load(TEXTURE_PATHS['V']),
+            'T': pygame.image.load(TEXTURE_PATHS['T']),
+            'Y': pygame.image.load(TEXTURE_PATHS['Y']),
             '!': pygame.image.load(TEXTURE_PATHS['!']),
         }
         for i in range(1, 25):

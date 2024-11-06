@@ -10,7 +10,7 @@ class Game:
     def __init__(self):
         pygame.init()
         self.screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
-        pygame.display.set_caption("Pacman")
+        pygame.display.set_caption("Pac Man")
         self.clock = pygame.time.Clock()
         
         self.textures = {
@@ -24,7 +24,12 @@ class Game:
             'cyan_ghost': pygame.image.load(TEXTURE_PATHS['cyan_ghost']),
             'pink_ghost': pygame.image.load(TEXTURE_PATHS['pink_ghost']),
             'scared_ghost': pygame.image.load(TEXTURE_PATHS['scared_ghost']),
+            'ghost_eyes': pygame.image.load(TEXTURE_PATHS['ghost_eyes']),
         }
+
+        self.start_time = time.time()
+        self.lives = 3
+        self.player.score = 0 
         
         self.reset_game()
 
@@ -40,7 +45,7 @@ class Game:
     def reset_game(self):
         """Reset all game variables to start a new game."""
         self.map = Map()  # Reset the map
-        self.player = Player(13, 26, self.textures)  # Reset the player        
+        self.player = Player(13, 26, self.textures)  # Reset the player
 
         # Reset ghosts with their initial positions
         self.red_ghost = Ghost(14, 14, self.textures['red_ghost'], (25, 0))
@@ -49,10 +54,6 @@ class Game:
         self.pink_ghost = Ghost(13, 14, self.textures['pink_ghost'], (2, 0))
 
         self.all_sprites = pygame.sprite.Group(self.player, self.red_ghost, self.orange_ghost, self.cyan_ghost, self.pink_ghost)
-
-        self.start_time = time.time()
-        self.lives = 3  # Reset lives
-        self.player.score = 0 
 
     def run(self):
         running = True
@@ -154,6 +155,19 @@ class Game:
                         map_layout[34][0] = 0
                     elif self.lives == 2:
                         map_layout[34][1] = 0
+
+            if self.player.count_dot == 242 and self.player.count_power == 4:
+                    map_layout[20][10] = ord('V')
+                    map_layout[20][11] = ord('I')
+                    map_layout[20][12] = ord('C')
+                    map_layout[20][13] = ord('T')
+                    map_layout[20][14] = ord('O')
+                    map_layout[20][15] = ord('R')
+                    map_layout[20][16] = ord('Y')
+                    map_layout[20][17] = ord('!')
+                    sound_manager.stop_all_sounds()
+                    sound_manager.play_sound("victory")
+
 
             self.all_sprites.update()
             self.all_sprites.draw(self.screen)

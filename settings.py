@@ -24,6 +24,7 @@ TEXTURE_PATHS = {
     "cyan_ghost": os.path.join(TEXTURES_DIR, "cyan_ghost.png"),
     "pink_ghost": os.path.join(TEXTURES_DIR, "pink_ghost.png"),
     "scared_ghost": os.path.join(TEXTURES_DIR, "scared_ghost.png"),
+    "ghost_eyes": os.path.join(TEXTURES_DIR, "ghost_eyes.png"),
     "gate": os.path.join(TEXTURES_DIR, "gate.png"),
     "H": os.path.join(TEXTURES_DIR, "H.png"),
     "I": os.path.join(TEXTURES_DIR, "I.png"),
@@ -36,6 +37,8 @@ TEXTURE_PATHS = {
     "A": os.path.join(TEXTURES_DIR, "A.png"),
     "M": os.path.join(TEXTURES_DIR, "M.png"),
     "V": os.path.join(TEXTURES_DIR, "V.png"),
+    "T": os.path.join(TEXTURES_DIR, "T.png"),
+    "Y": os.path.join(TEXTURES_DIR, "Y.png"),
     "!": os.path.join(TEXTURES_DIR, "exclamation.png"),
 }
 

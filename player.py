@@ -13,6 +13,8 @@ class Player(pygame.sprite.Sprite):
         self.direction = pygame.Vector2(0, 0)
         self.next_direction = pygame.Vector2(0, 0)
         self.score = 0
+        self.count_dot = 0
+        self.count_power = 0
         self.speed = TILE_SIZE // 8  # Pac-Man's speed
         self.frame_count = 0
         self.current_texture = "neutral"
@@ -68,11 +70,13 @@ class Player(pygame.sprite.Sprite):
         tile_value = map_layout[tile_y][tile_x]
         if tile_value == 25:  # Dot
             self.score += 10
+            self.count_dot += 1
             map_layout[tile_y][tile_x] = 0
             sound_manager.play_sound("eat")
 
         elif tile_value == 26:  # Power Pellet
             self.score += 50
+            self.count_power += 1
             map_layout[tile_y][tile_x] = 0
             sound_manager.play_sound("power_pellet")
 

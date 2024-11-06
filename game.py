@@ -63,8 +63,8 @@ class Game:
                 if event.type == pygame.QUIT:
                     running = False
                 elif event.type == pygame.KEYDOWN:
-                    sound_manager.stop_sound('move')
-                    sound_manager.play_sound('move', loop=True)
+                    sound_manager.stop_sound('eat')
+                    sound_manager.play_sound('eat', loop=True)
                     if event.key == pygame.K_w or event.key == pygame.K_UP and not self.game_over:
                         self.player.set_direction("up")
                     elif event.key == pygame.K_s or event.key == pygame.K_DOWN and not self.game_over:

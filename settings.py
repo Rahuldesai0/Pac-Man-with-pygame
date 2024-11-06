@@ -26,21 +26,11 @@ TEXTURE_PATHS = {
     "scared_ghost": os.path.join(TEXTURES_DIR, "scared_ghost.png"),
     "ghost_eyes": os.path.join(TEXTURES_DIR, "ghost_eyes.png"),
     "gate": os.path.join(TEXTURES_DIR, "gate.png"),
-    "H": os.path.join(TEXTURES_DIR, "H.png"),
-    "I": os.path.join(TEXTURES_DIR, "I.png"),
-    "G": os.path.join(TEXTURES_DIR, "G.png"),
-    "S": os.path.join(TEXTURES_DIR, "S.png"),
-    "C": os.path.join(TEXTURES_DIR, "C.png"),
-    "O": os.path.join(TEXTURES_DIR, "O.png"),
-    "R": os.path.join(TEXTURES_DIR, "R.png"),
-    "E": os.path.join(TEXTURES_DIR, "E.png"),
-    "A": os.path.join(TEXTURES_DIR, "A.png"),
-    "M": os.path.join(TEXTURES_DIR, "M.png"),
-    "V": os.path.join(TEXTURES_DIR, "V.png"),
-    "T": os.path.join(TEXTURES_DIR, "T.png"),
-    "Y": os.path.join(TEXTURES_DIR, "Y.png"),
     "!": os.path.join(TEXTURES_DIR, "exclamation.png"),
 }
+
+for i in range(65, 91):
+    TEXTURE_PATHS[chr(i)] = os.path.join(TEXTURES_DIR, f'{chr(i)}.png')
 
 for i in range(1, 25):
     TEXTURE_PATHS[f'wall{i}'] = os.path.join(TEXTURES_DIR, f'wall_{i}.png')

@@ -56,21 +56,12 @@ class Map:
             'cyan_ghost': pygame.image.load(TEXTURE_PATHS['cyan_ghost']),
             'pink_ghost': pygame.image.load(TEXTURE_PATHS['pink_ghost']),
             'gate': pygame.image.load(TEXTURE_PATHS['gate']),
-            'H': pygame.image.load(TEXTURE_PATHS['H']),
-            'I': pygame.image.load(TEXTURE_PATHS['I']),
-            'G': pygame.image.load(TEXTURE_PATHS['G']),
-            'S': pygame.image.load(TEXTURE_PATHS['S']),
-            'C': pygame.image.load(TEXTURE_PATHS['C']),
-            'O': pygame.image.load(TEXTURE_PATHS['O']),
-            'R': pygame.image.load(TEXTURE_PATHS['R']),
-            'E': pygame.image.load(TEXTURE_PATHS['E']),
-            'A': pygame.image.load(TEXTURE_PATHS['A']),
-            'M': pygame.image.load(TEXTURE_PATHS['M']),
-            'V': pygame.image.load(TEXTURE_PATHS['V']),
-            'T': pygame.image.load(TEXTURE_PATHS['T']),
-            'Y': pygame.image.load(TEXTURE_PATHS['Y']),
             '!': pygame.image.load(TEXTURE_PATHS['!']),
         }
+
+        for i in range(65, 91):
+            self.textures[chr(i)] = pygame.image.load(TEXTURE_PATHS[chr(i)])
+
         for i in range(1, 25):
             wall_key = f'wall{i}'
             self.textures[wall_key] = pygame.image.load(TEXTURE_PATHS[wall_key])

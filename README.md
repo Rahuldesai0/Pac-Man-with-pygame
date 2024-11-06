@@ -11,6 +11,7 @@ Things already implemented:
 6. Ghost AI
 7. Lives System
 8. Game over losing
+9. Sound Effects
 
 Things left to implement:
 1. Power Pellet Functionality

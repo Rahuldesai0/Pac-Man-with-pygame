@@ -1,6 +1,7 @@
 import pygame
 from settings import TILE_SIZE
 from map import Map, map_layout
+import sound_manager
 
 class Player(pygame.sprite.Sprite):
     def __init__(self, x, y, textures):
@@ -68,9 +69,12 @@ class Player(pygame.sprite.Sprite):
         if tile_value == 25:  # Dot
             self.score += 10
             map_layout[tile_y][tile_x] = 0
+            sound_manager.play_sound("eat")
+
         elif tile_value == 26:  # Power Pellet
             self.score += 50
             map_layout[tile_y][tile_x] = 0
+            sound_manager.play_sound("power_pellet")
 
     
         for i in range(6):

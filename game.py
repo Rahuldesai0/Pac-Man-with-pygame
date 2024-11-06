@@ -4,6 +4,7 @@ from map import *
 import time
 from player import Player
 from ghost import Ghost
+import sound_manager
 
 class Game:
     def __init__(self):
@@ -60,6 +61,8 @@ class Game:
                 if event.type == pygame.QUIT:
                     running = False
                 elif event.type == pygame.KEYDOWN:
+                    sound_manager.stop_sound('move')
+                    sound_manager.play_sound('move', loop=True)
                     if event.key == pygame.K_w or event.key == pygame.K_UP:
                         self.player.set_direction("up")
                     elif event.key == pygame.K_s or event.key == pygame.K_DOWN:
@@ -72,7 +75,6 @@ class Game:
                         running = False
             self.screen.fill((0, 0, 0))
             self.map.draw(self.screen)
-
             elapsed_time = time.time() - self.start_time
             if elapsed_time > 5:
                 # Define custom chase target tiles for each ghost here
@@ -130,6 +132,7 @@ class Game:
             # Check for collision with ghosts
             if any(self.player.get_position() == ghost.get_position() for ghost in [self.red_ghost, self.orange_ghost, self.cyan_ghost, self.pink_ghost]):
                 self.lives -= 1
+                sound_manager.play_sound("player_death")
                 if self.lives == 0:
                     map_layout[20][9] = ord('G')
                     map_layout[20][10] = ord('A')
@@ -139,7 +142,9 @@ class Game:
                     map_layout[20][15] = ord('V')
                     map_layout[20][16] = ord('E')
                     map_layout[20][17] = ord('R')
-                    map_layout[20][18] = ord('!')# End the game
+                    map_layout[20][18] = ord('!')
+                    sound_manager.stop_all_sounds()
+                    sound_manager.play_sound("game_over")# End the game
                 else:
                     # Clear tile and reset player position
                     self.reset_player()

@@ -152,11 +152,11 @@ class Game:
                 if self.player.power_pellet_active:
                     for ghost in [self.red_ghost, self.orange_ghost, self.cyan_ghost, self.pink_ghost]:
                         if self.player.get_position() == ghost.get_position() and not ghost.eyes_mode:
+                            sound_manager.play_sound('power_pellet_eat')
                             # Enter eyes mode and set target to (14, 14)
                             self.player.score += 200
                             ghost.image = self.textures['ghost_eyes']
                             ghost.set_target_tile((14, 14))
-                            sound_manager.play_sound('power_pellet_eye')
                             ghost.eyes_mode = True  # Set the ghost to eyes mode
 
                         # Check if the ghost in eyes mode has reached (14, 14)

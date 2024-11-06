@@ -30,7 +30,6 @@ class Game:
         self.start_time = time.time()
         self.lives = 3
         self.game_over = False
-        self.victory = False
         
         self.reset_game()
 
@@ -82,7 +81,7 @@ class Game:
             self.screen.fill((0, 0, 0))
             self.map.draw(self.screen)
             elapsed_time = time.time() - self.start_time
-            if elapsed_time > 5 and not self.game_over and not self.victory:
+            if elapsed_time > 5 and not self.game_over:
                 player_x, player_y = self.player.get_position()
                 player_direction = self.player.get_direction()
                 if self.player.power_pellet_active:
@@ -149,7 +148,7 @@ class Game:
                     self.orange_ghost.set_target_tile(orange_target)
 
             # Check for collision with ghosts
-            if any(self.player.get_position() == ghost.get_position() for ghost in [self.red_ghost, self.orange_ghost, self.cyan_ghost, self.pink_ghost]) and not self.game_over and not self.victory:
+            if any(self.player.get_position() == ghost.get_position() for ghost in [self.red_ghost, self.orange_ghost, self.cyan_ghost, self.pink_ghost]) and not self.game_over:
                 if self.player.power_pellet_active:
                     for ghost in [self.red_ghost, self.orange_ghost, self.cyan_ghost, self.pink_ghost]:
                         if self.player.get_position() == ghost.get_position() and not ghost.eyes_mode:
@@ -202,7 +201,6 @@ class Game:
                     map_layout[20][16] = ord('Y')
                     map_layout[20][17] = ord('!')
                     self.lives = float('inf')
-                    self.victory = True
                     sound_manager.stop_all_sounds()
                     sound_manager.play_sound("victory")
 

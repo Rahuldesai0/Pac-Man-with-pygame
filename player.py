@@ -1,6 +1,7 @@
 import pygame
 from settings import TILE_SIZE
 from map import Map, map_layout
+import time
 import sound_manager
 
 class Player(pygame.sprite.Sprite):
@@ -18,6 +19,8 @@ class Player(pygame.sprite.Sprite):
         self.speed = TILE_SIZE // 8  # Pac-Man's speed
         self.frame_count = 0
         self.current_texture = "neutral"
+        self.power_pellet_active = False
+        self.power_pellet_start_time = None
 
     def update(self):
         # Determine current tile position
@@ -50,6 +53,9 @@ class Player(pygame.sprite.Sprite):
         # Handle animation
         self.animate_texture()
 
+        if self.power_pellet_active and time.time() - self.power_pellet_start_time >= 10:
+            self.power_pellet_active = False
+
     def is_aligned_with_grid(self):
         """Check if Pac-Man is aligned to the grid."""
         return self.rect.x % TILE_SIZE == 0 and self.rect.y % TILE_SIZE == 0
@@ -79,6 +85,8 @@ class Player(pygame.sprite.Sprite):
             self.count_power += 1
             map_layout[tile_y][tile_x] = 0
             sound_manager.play_sound("power_pellet")
+            self.power_pellet_active = True
+            self.power_pellet_start_time = time.time()
 
     
         for i in range(6):

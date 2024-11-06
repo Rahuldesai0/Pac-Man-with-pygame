@@ -11,6 +11,7 @@ class Ghost(pygame.sprite.Sprite):
         self.target = initial_target
         self.direction = "up"  # Initial movement direction
         self.speed = 1
+        self.eyes_mode = False
 
     def get_position(self):
         return (self.rect.x // TILE_SIZE, self.rect.y // TILE_SIZE)

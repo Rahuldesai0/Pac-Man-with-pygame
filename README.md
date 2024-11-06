@@ -13,7 +13,7 @@ Things already implemented:
 8. Game over losing
 9. Sound Effects
 10. Winning condition
+11. Power Pellet Functionality
 
 Things left to implement:
-1. Power Pellet Functionality
-2. Levels
+1. Levels

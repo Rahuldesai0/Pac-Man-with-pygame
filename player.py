@@ -77,6 +77,8 @@ class Player(pygame.sprite.Sprite):
         if tile_value == 25:  # Dot
             self.score += 10
             self.count_dot += 1
+            sound_manager.stop_sound('eat')
+            sound_manager.play_sound('eat')
             map_layout[tile_y][tile_x] = 0
 
         elif tile_value == 26:  # Power Pellet

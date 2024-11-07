@@ -10,6 +10,7 @@ class Game:
     def __init__(self):
         pygame.init()
         self.screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
+        sound_manager.play_sound('start')
         pygame.display.set_caption("Pac Man")
         self.clock = pygame.time.Clock()
         
@@ -30,6 +31,7 @@ class Game:
         self.start_time = time.time()
         self.lives = 3
         self.game_over = False
+        self.victory = False
         
         self.reset_game()
 
@@ -63,15 +65,13 @@ class Game:
                 if event.type == pygame.QUIT:
                     running = False
                 elif event.type == pygame.KEYDOWN:
-                    sound_manager.stop_sound('eat')
-                    sound_manager.play_sound('eat', loop=True)
-                    if event.key == pygame.K_w or event.key == pygame.K_UP and not self.game_over:
+                    if (event.key == pygame.K_w or event.key == pygame.K_UP) and not self.game_over:
                         self.player.set_direction("up")
-                    elif event.key == pygame.K_s or event.key == pygame.K_DOWN and not self.game_over:
+                    elif (event.key == pygame.K_s or event.key == pygame.K_DOWN) and not self.game_over:
                         self.player.set_direction("down")
-                    elif event.key == pygame.K_a or event.key == pygame.K_LEFT and not self.game_over:
+                    elif (event.key == pygame.K_a or event.key == pygame.K_LEFT) and not self.game_over:
                         self.player.set_direction("left")
-                    elif event.key == pygame.K_d or event.key == pygame.K_RIGHT and not self.game_over:
+                    elif (event.key == pygame.K_d or event.key == pygame.K_RIGHT) and not self.game_over:
                         self.player.set_direction("right")
                     elif (event.key == pygame.K_RETURN and self.lives <= 0) or event.key == pygame.K_ESCAPE:
                         running = False
@@ -89,6 +89,7 @@ class Game:
                         if not ghost.eyes_mode:
                             ghost.image = self.textures["scared_ghost"]
                             ghost.set_target_tile((MAP_WIDTH-player_x,MAP_HEIGHT-player_y))
+                            ghost.speed = 1
 
                 # Define custom chase target tiles for each ghost here
                 else:
@@ -97,7 +98,7 @@ class Game:
                     self.cyan_ghost.image = self.textures["cyan_ghost"]
                     self.orange_ghost.image = self.textures["orange_ghost"]
                     for ghost in [self.red_ghost, self.orange_ghost, self.cyan_ghost, self.pink_ghost]:
-                        ghost.speed = 1
+                        ghost.speed = 2
                         ghost.eyes_mode = False
                     red_target = (player_x, player_y)
 
@@ -157,11 +158,13 @@ class Game:
                             self.player.score += 200
                             ghost.image = self.textures['ghost_eyes']
                             ghost.set_target_tile((14, 14))
+                            ghost.speed = 2
                             ghost.eyes_mode = True  # Set the ghost to eyes mode
 
                         # Check if the ghost in eyes mode has reached (14, 14)
                         if ghost.eyes_mode and ghost.get_position() == (14, 14):
                             ghost.image = self.textures['scared_ghost']  # Revert to scared ghost texture
+                            ghost.speed = 1
                             ghost.eyes_mode = False
 
                 else:
@@ -191,7 +194,7 @@ class Game:
                         elif self.lives == 2:
                             map_layout[34][1] = 0
 
-            if self.player.count_dot == 242 and self.player.count_power == 4 and not self.game_over:
+            if self.player.count_dot == 242 and self.player.count_power == 4 and not self.game_over and not self.victory:
                     map_layout[20][10] = ord('V')
                     map_layout[20][11] = ord('I')
                     map_layout[20][12] = ord('C')
@@ -201,6 +204,7 @@ class Game:
                     map_layout[20][16] = ord('Y')
                     map_layout[20][17] = ord('!')
                     self.lives = float('inf')
+                    self.victory = True
                     sound_manager.stop_all_sounds()
                     sound_manager.play_sound("victory")
 

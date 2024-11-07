@@ -89,7 +89,6 @@ class Game:
                         if not ghost.eyes_mode:
                             ghost.image = self.textures["scared_ghost"]
                             ghost.set_target_tile((MAP_WIDTH-player_x,MAP_HEIGHT-player_y))
-                            ghost.speed = 1
 
                 # Define custom chase target tiles for each ghost here
                 else:
@@ -98,7 +97,6 @@ class Game:
                     self.cyan_ghost.image = self.textures["cyan_ghost"]
                     self.orange_ghost.image = self.textures["orange_ghost"]
                     for ghost in [self.red_ghost, self.orange_ghost, self.cyan_ghost, self.pink_ghost]:
-                        ghost.speed = 2
                         ghost.eyes_mode = False
                     red_target = (player_x, player_y)
 
@@ -149,7 +147,7 @@ class Game:
                     self.orange_ghost.set_target_tile(orange_target)
 
             # Check for collision with ghosts
-            if any(self.player.get_position() == ghost.get_position() for ghost in [self.red_ghost, self.orange_ghost, self.cyan_ghost, self.pink_ghost]) and not self.game_over:
+            if any(self.player.get_position() == ghost.get_position() for ghost in [self.red_ghost, self.orange_ghost, self.cyan_ghost, self.pink_ghost]) and not self.game_over and not self.victory:
                 if self.player.power_pellet_active:
                     for ghost in [self.red_ghost, self.orange_ghost, self.cyan_ghost, self.pink_ghost]:
                         if self.player.get_position() == ghost.get_position() and not ghost.eyes_mode:
@@ -158,13 +156,11 @@ class Game:
                             self.player.score += 200
                             ghost.image = self.textures['ghost_eyes']
                             ghost.set_target_tile((14, 14))
-                            ghost.speed = 2
                             ghost.eyes_mode = True  # Set the ghost to eyes mode
 
                         # Check if the ghost in eyes mode has reached (14, 14)
                         if ghost.eyes_mode and ghost.get_position() == (14, 14):
                             ghost.image = self.textures['scared_ghost']  # Revert to scared ghost texture
-                            ghost.speed = 1
                             ghost.eyes_mode = False
 
                 else:

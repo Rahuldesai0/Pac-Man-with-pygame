@@ -3,7 +3,7 @@ import torch.nn as nn
 import torch.optim as optim
 import random
 import numpy as np
-from collections import deque
+from collections import deque   
 
 # -----------------------
 # Neural Network for Q-learning
@@ -33,12 +33,12 @@ class DQNAgent:
         self.episode_rewards = []
 
         # Hyperparameters
-        self.gamma = 0.9
+        self.gamma = 0.99
         self.epsilon = 1.0
         self.epsilon_min = 0.05
-        self.epsilon_decay = 0.9
+        self.epsilon_decay = 0.995
         self.lr = 0.001
-        self.batch_size = 64
+        self.batch_size = 256
 
         # Memory
         self.memory = deque(maxlen=50000)

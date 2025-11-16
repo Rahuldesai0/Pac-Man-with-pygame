@@ -25,6 +25,7 @@ class Game:
         self.agent = agent if agent is not None else DQNAgent()
         self.reward = 0.0              # step reward
         self.total_reward = 0.0        # accumulated reward per episode
+        self.step_count = 0
 
         self.distance_cache = {}
 
@@ -64,6 +65,7 @@ class Game:
         self.player = Player(13, 26, self.textures)  # Reset the player
         self.player.score = 0 
         self.total_reward = 0.0
+        self.step_count = 0
 
 
         # Reset ghosts with their initial positions
@@ -321,26 +323,26 @@ class Game:
     #     return reward
 
     def get_reward(self):
+        step = -1
         # Use a clear hierarchy of rewards for optimal learning
         if self.player.just_died:
             # CRITICAL PENALTY: MUST be the highest absolute value
-            self.reward -= 500
+            step -= 200
         elif self.game_over:
-            self.reward -= 2000
+            step -= 500
         elif self.player.just_ate_ghost:
             # HIGH REWARD: Incentivize risky, high-score action
-            self.reward += 250  
+            step += 50  
         elif self.player.just_ate_power_pellet:
             # MEDIUM REWARD: Prioritize strategic item
-            self.reward += 50   
+            step += 20
         elif self.victory:
             # FINAL GOAL REWARD
-            self.reward += 1000 
+            step += 1000 
         elif self.player.just_ate_dot:
             # LOW REWARD: Basic scoring and maze clearing
-            self.reward += 10   
-        self.reward -= 0.1
-        
+            step += 5
+        self.reward = step
         return self.reward
 
 
@@ -519,7 +521,7 @@ class Game:
 
             self.all_sprites.update()
             self.all_sprites.draw(self.screen)
-            pygame.display.flip()
+            if self.step_count % 500 == 0: pygame.display.flip()
 
                     # --- reward collection for RL (if rl_mode) ---
             if rl_mode:
@@ -539,12 +541,14 @@ class Game:
                 done = self.game_over or self.victory
                 self.agent.remember(self.state, action, step_reward, next_state, done)
                 self.agent.replay()
-
+                self.step_count += 1
+                if self.step_count % 500 == 0:
+                    self.agent.update_target()
                 if done:
                     # update target network and end episode
                     self.agent.update_target()
                     running = False
                     
-                self.clock.tick()
+                #self.clock.tick()
 
         pygame.quit()

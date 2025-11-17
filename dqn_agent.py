@@ -26,9 +26,15 @@ class DQNAgent:
         self.state_size = state_size
         self.action_size = action_size
 
-        # Episode tracking (YOU WANTED THIS BACK)
-        self.episode_rewards = []           # List of total reward per completed episode
-        self.current_episode_reward = 0.0   # Running total for current episode
+        # Episode tracking
+        self.episode_rewards = []
+        self.current_episode_reward = 0.0
+        self.episode_count = 0
+        
+        # Debug tracking
+        self.total_training_steps = 0
+        self.losses = []
+        self.q_value_samples = []
 
         # Hyperparameters
         self.gamma = 0.99
@@ -51,25 +57,50 @@ class DQNAgent:
 
         self.optimizer = optim.Adam(self.model.parameters(), lr=self.lr)
         self.loss_fn = nn.MSELoss()
+        
+        print(f"🤖 Agent initialized | Device: {self.device}")
 
     def update_target(self):
         self.target_model.load_state_dict(self.model.state_dict())
 
     def remember(self, state, action, reward, next_state, done):
         self.memory.append((state, action, reward, next_state, done))
-        
-        # Track episode reward
         self.current_episode_reward += reward
         
         if done:
+            self.episode_count += 1
             self.episode_rewards.append(self.current_episode_reward)
-            self.current_episode_reward = 0.0  # Reset for next episode
+            
+            # Decay epsilon ONCE per episode (not per step!)
+            if self.epsilon > self.epsilon_min:
+                self.epsilon *= self.epsilon_decay
+            
+            # Compact episode summary
+            avg_10 = np.mean(self.episode_rewards[-10:]) if len(self.episode_rewards) >= 10 else self.current_episode_reward
+            avg_loss = np.mean(self.losses[-100:]) if len(self.losses) >= 100 else (np.mean(self.losses) if self.losses else 0)
+            avg_q = np.mean(self.q_value_samples[-100:]) if len(self.q_value_samples) >= 100 else (np.mean(self.q_value_samples) if self.q_value_samples else 0)
+            
+            print(f"Ep {self.episode_count:4d} | R: {self.current_episode_reward:7.1f} | "
+                  f"Avg10: {avg_10:7.1f} | ε: {self.epsilon:.3f} | "
+                  f"Loss: {avg_loss:.4f} | Q: {avg_q:6.1f} | Mem: {len(self.memory):5d}")
+            
+            # Warnings only when needed
+            if avg_loss > 10:
+                print(f"   ⚠️  High loss detected")
+            if len(self.memory) < 1000 and self.episode_count > 10:
+                print(f"   ⚠️  Low memory size - may not be learning")
+            
+            self.current_episode_reward = 0.0
 
     def act(self, state):
         if np.random.rand() < self.epsilon:
             return random.randrange(self.action_size)
-        state = torch.FloatTensor(state).unsqueeze(0).to(self.device)
-        q_values = self.model(state)
+        
+        state_tensor = torch.FloatTensor(state).unsqueeze(0).to(self.device)
+        with torch.no_grad():
+            q_values = self.model(state_tensor)
+        
+        self.q_value_samples.append(q_values.max().item())
         return torch.argmax(q_values).cpu().item()
 
     def replay(self):
@@ -91,17 +122,44 @@ class DQNAgent:
         targets = rewards + self.gamma * max_next_q * (1 - dones)
 
         q_values = self.model(states).gather(1, actions.unsqueeze(1)).squeeze(1)
-
         loss = self.loss_fn(q_values, targets.detach())
+        
+        self.losses.append(loss.item())
+        self.total_training_steps += 1
+        
+        # Critical error check
+        if torch.isnan(loss):
+            print(f"🚨 NaN loss at step {self.total_training_steps}!")
+            return
+        
         self.optimizer.zero_grad()
         loss.backward()
+        torch.nn.utils.clip_grad_norm_(self.model.parameters(), max_norm=10.0)
         self.optimizer.step()
 
-        # Epsilon decay
-        if self.epsilon > self.epsilon_min:
-            self.epsilon *= self.epsilon_decay
+        # Epsilon decay removed from here - now happens once per episode in remember()
 
-        # Target network update
         self.steps += 1
         if self.steps % self.target_update_freq == 0:
             self.update_target()
+    
+    def save_model(self, filepath):
+        torch.save({
+            'model_state_dict': self.model.state_dict(),
+            'target_model_state_dict': self.target_model.state_dict(),
+            'optimizer_state_dict': self.optimizer.state_dict(),
+            'epsilon': self.epsilon,
+            'episode_count': self.episode_count,
+            'episode_rewards': self.episode_rewards,
+        }, filepath)
+        print(f"💾 Saved to {filepath}")
+    
+    def load_model(self, filepath):
+        checkpoint = torch.load(filepath)
+        self.model.load_state_dict(checkpoint['model_state_dict'])
+        self.target_model.load_state_dict(checkpoint['target_model_state_dict'])
+        self.optimizer.load_state_dict(checkpoint['optimizer_state_dict'])
+        self.epsilon = checkpoint['epsilon']
+        self.episode_count = checkpoint['episode_count']
+        self.episode_rewards = checkpoint['episode_rewards']
+        print(f"📂 Loaded from {filepath}")

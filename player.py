@@ -3,6 +3,7 @@ from settings import TILE_SIZE
 from map import Map, map_layout
 import time
 import sound_manager
+from settings import rl_mode
 
 class Player(pygame.sprite.Sprite):
     def __init__(self, x, y, textures):
@@ -93,8 +94,9 @@ class Player(pygame.sprite.Sprite):
             self.score += 10
             self.count_dot += 1
             self.just_ate_dot = True
-            # sound_manager.stop_sound('eat')
-            # sound_manager.play_sound('eat')
+            if not rl_mode:
+                sound_manager.stop_sound('eat')
+                sound_manager.play_sound('eat')
             map_layout[tile_y][tile_x] = 0
 
         elif tile_value == 26:  # Power Pellet
@@ -102,7 +104,8 @@ class Player(pygame.sprite.Sprite):
             self.count_power += 1
             self.just_ate_power_pellet = True
             map_layout[tile_y][tile_x] = 0
-            # sound_manager.play_sound("power_pellet")
+            if not rl_mode:
+                sound_manager.play_sound("power_pellet")
             self.power_pellet_active = True
             self.power_pellet_start_time = time.time()
 

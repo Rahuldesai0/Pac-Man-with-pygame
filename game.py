@@ -22,10 +22,11 @@ class Game:
         # sound_manager.play_sound('start')
         pygame.display.set_caption("Pac Man")
         self.clock = pygame.time.Clock()
-        self.agent = agent if agent is not None else DQNAgent()
-        self.reward = 0.0              # step reward
-        self.total_reward = 0.0        # accumulated reward per episode
-        self.step_count = 0
+        if rl_mode:
+            self.agent = agent if agent is not None else DQNAgent()
+            self.reward = 0.0              # step reward
+            self.total_reward = 0.0        # accumulated reward per episode
+            self.step_count = 0
 
         self.distance_cache = {}
 
@@ -413,14 +414,13 @@ class Game:
     def run(self):
         running = True
         while running:
-            for event in pygame.event.get():
+            events = pygame.event.get()
+            for event in events:
                 if event.type == pygame.QUIT:
                     running = False
 
-            # --- RL ADD ---
             if not rl_mode:
-                # --- manual control (keyboard) ---
-                for event in pygame.event.get():
+                for event in events:
                     if event.type == pygame.KEYDOWN:
                         if (event.key == pygame.K_w or event.key == pygame.K_UP) and not self.game_over:
                             self.player.set_direction("up")
@@ -523,7 +523,8 @@ class Game:
                 if self.player.power_pellet_active:
                     for ghost in [self.red_ghost, self.orange_ghost, self.cyan_ghost, self.pink_ghost]:
                         if self.player.get_position() == ghost.get_position() and not ghost.eyes_mode:
-                            # sound_manager.play_sound('power_pellet_eat')
+                            if not rl_mode:
+                                sound_manager.play_sound('power_pellet_eat')
                             # Enter eyes mode and set target to (14, 14)
                             self.player.score += 200
                             self.player.just_ate_ghost = True
@@ -539,7 +540,8 @@ class Game:
                 else:
                     self.lives -= 1
                     self.player.just_died = True
-                    # sound_manager.play_sound("player_death")
+                    if not rl_mode:
+                        sound_manager.play_sound("player_death")
                     if self.lives == 0:
                         map_layout[20][9] = ord('G')
                         map_layout[20][10] = ord('A')
@@ -552,8 +554,9 @@ class Game:
                         map_layout[20][18] = ord('!')
                         self.player.score = 0
                         self.game_over = True
-                        # sound_manager.stop_all_sounds()
-                        # sound_manager.play_sound("game_over")# End the game
+                        if not rl_mode:
+                            sound_manager.stop_all_sounds()
+                            sound_manager.play_sound("game_over")# End the game
                     else:
                         # Clear tile and reset player position
                         self.reset_player()
@@ -575,12 +578,14 @@ class Game:
                     map_layout[20][17] = ord('!')
                     self.lives = float('inf')
                     self.victory = True
-                    # sound_manager.stop_all_sounds()
-                    # sound_manager.play_sound("victory")
+                    if not rl_mode:
+                        sound_manager.stop_all_sounds()
+                        sound_manager.play_sound("victory")
 
             self.all_sprites.update()
             self.all_sprites.draw(self.screen)
-            pygame.display.flip()
+            if rl_mode and self.step_count % 400 == 0: pygame.display.flip()
+            else: pygame.display.flip()
 
                     # --- reward collection for RL (if rl_mode) ---
             if rl_mode:
@@ -609,5 +614,6 @@ class Game:
                     running = False
                     
                 self.clock.tick()
+            else: self.clock.tick(60)
 
         pygame.quit()

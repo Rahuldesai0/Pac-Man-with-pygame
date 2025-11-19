@@ -1,6 +1,6 @@
 import os
 
-rl_mode = False
+rl_mode = True
 MAP_WIDTH = 28
 MAP_HEIGHT = 36
 TILE_SIZE = 16

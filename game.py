@@ -78,10 +78,6 @@ class Game:
         self.all_sprites = pygame.sprite.Group(self.player, self.red_ghost, self.orange_ghost, self.cyan_ghost, self.pink_ghost)
 
     def get_bfs_distances_from_point(self, start_pos, max_distance=None):
-        """
-        Single BFS that returns distances to ALL reachable points from start_pos.
-        Much more efficient than calling BFS multiple times.
-        """
         cache_key = (start_pos, max_distance)
         if cache_key in self.distance_cache:
             return self.distance_cache[cache_key]
@@ -92,18 +88,11 @@ class Game:
         
         while queue:
             (x, y), dist = queue.popleft()
-            
-            # Early exit if we've reached max distance
             if max_distance and dist >= max_distance:
                 continue
-            
-            # Check all 4 directions
             for dx, dy in [(0, -1), (0, 1), (-1, 0), (1, 0)]:
                 nx, ny = x + dx, y + dy
-                
-                # Check bounds
                 if 0 <= nx < MAP_WIDTH and 0 <= ny < MAP_HEIGHT:
-                    # Check if tile is walkable and not visited
                     if not 1 <= map_layout[ny][nx] <= 24 and (nx, ny) not in distances:
                         distances[(nx, ny)] = dist + 1
                         queue.append(((nx, ny), dist + 1))
@@ -112,83 +101,54 @@ class Game:
         return distances
 
     def get_state(self):
-        """Get enhanced state representation with optimized pathfinding."""
-        # Clear cache at the start of each state calculation
         self.distance_cache.clear()
-        
         px, py = self.player.get_position()
-        
         ghosts = [self.red_ghost, self.orange_ghost, self.cyan_ghost, self.pink_ghost]
         
-        # Single BFS from player position (gets all distances at once)
         player_distances = self.get_bfs_distances_from_point((px, py), max_distance=30)
         
-        # Ghost distances and scared status
         ghost_distances = []
         ghost_scared = []
         min_ghost_distance = float('inf')
         
         for ghost in ghosts:
             gx, gy = ghost.get_position()
-            dist = player_distances.get((gx, gy), MAP_WIDTH * MAP_HEIGHT)
+            dist = player_distances.get((gx, gy), 9999)
             ghost_distances.append(dist)
             min_ghost_distance = min(min_ghost_distance, dist)
             ghost_scared.append(1.0 if (self.player.power_pellet_active and not ghost.eyes_mode) else 0.0)
         
-        # Normalize ghost distances
         max_possible_dist = MAP_WIDTH * MAP_HEIGHT
         ghost_distances_normalized = [d / max_possible_dist for d in ghost_distances]
         
-        # Find nearest dot using the same BFS result
         min_dot_distance = float('inf')
         for y in range(len(map_layout)):
             for x in range(len(map_layout[0])):
                 if map_layout[y][x] == 25:
                     dot_dist = player_distances.get((x, y), float('inf'))
                     min_dot_distance = min(min_dot_distance, dot_dist)
+        min_dot_distance_normalized = min_dot_distance / max_possible_dist if min_dot_distance != float('inf') else 1.0
         
-        if min_dot_distance == float('inf'):
-            min_dot_distance_normalized = 1.0
-        else:
-            min_dot_distance_normalized = min_dot_distance / max_possible_dist
-        
-        # Directional danger - only check immediate neighbors
         danger_up = danger_down = danger_left = danger_right = 0.0
-        
-        # For each direction, check if moving brings us closer to dangerous ghosts
         for i, ghost in enumerate(ghosts):
             if self.player.power_pellet_active and not ghost.eyes_mode:
-                continue  # Skip scared ghosts
-            
-            current_ghost_dist = ghost_distances[i]
-            if current_ghost_dist > 15:  # Ignore very distant ghosts
                 continue
-            
+            current_dist = ghost_distances[i]
+            if current_dist > 15: continue
             gx, gy = ghost.get_position()
-            
-            # Check up
             if py > 0 and map_layout[py-1][px] != 1:
-                up_dist = player_distances.get((gx, gy), float('inf'))  # Distance from current pos
-                # Estimate if up moves us closer (simple heuristic)
                 if abs(gx - px) + abs(gy - (py-1)) < abs(gx - px) + abs(gy - py):
                     danger_up += 1.0
-            
-            # Check down
             if py < MAP_HEIGHT-1 and map_layout[py+1][px] != 1:
                 if abs(gx - px) + abs(gy - (py+1)) < abs(gx - px) + abs(gy - py):
                     danger_down += 1.0
-            
-            # Check left
             if px > 0 and map_layout[py][px-1] != 1:
                 if abs(gx - (px-1)) + abs(gy - py) < abs(gx - px) + abs(gy - py):
                     danger_left += 1.0
-            
-            # Check right
             if px < MAP_WIDTH-1 and map_layout[py][px+1] != 1:
                 if abs(gx - (px+1)) + abs(gy - py) < abs(gx - px) + abs(gy - py):
                     danger_right += 1.0
         
-        # Normalize danger values
         max_danger = max(danger_up, danger_down, danger_left, danger_right, 1.0)
         danger_up /= max_danger
         danger_down /= max_danger
@@ -199,223 +159,83 @@ class Game:
             px / MAP_WIDTH,
             py / MAP_HEIGHT,
             min_dot_distance_normalized,
-            ghost_distances_normalized[0],  # Red ghost
-            ghost_distances_normalized[1],  # Orange ghost
-            ghost_distances_normalized[2],  # Cyan ghost
-            ghost_distances_normalized[3],  # Pink ghost
-            ghost_scared[0],
-            ghost_scared[1],
-            ghost_scared[2],
-            ghost_scared[3],
-            danger_up,
-            danger_down,
-            danger_left,
-            danger_right,
+            *ghost_distances_normalized,
+            *ghost_scared,
+            danger_up, danger_down, danger_left, danger_right,
             float(self.player.power_pellet_active),
         ], dtype=np.float32)
         return state
 
-    # def get_reward(self):
-    #     # Track current & previous positions
-    #     px, py = self.player.get_position()
-    #     if not hasattr(self, "prev_positions"):
-    #         self.prev_positions = deque(maxlen=5)
-    #     self.prev_positions.append((px, py))
-
-    #     # Anti-jiggle detection (oscillating between two tiles)
-    #     jiggle_penalty = 0
-    #     if len(self.prev_positions) >= 4:
-    #         if (self.prev_positions[-1] == self.prev_positions[-3] and 
-    #             self.prev_positions[-2] == self.prev_positions[-4]):
-    #             jiggle_penalty = -12  # harsh penalty to break oscillation
-
-    #     # BFS distances from player
-    #     player_distances = self.get_bfs_distances_from_point((px, py), max_distance=MAP_WIDTH*MAP_HEIGHT)
-
-    #     ghosts = [self.red_ghost, self.orange_ghost, self.cyan_ghost, self.pink_ghost]
-    #     total_ghost_distance = 0
-    #     min_ghost_distance = float('inf')
-    #     scared_ghosts_nearby = 0
-
-    #     for ghost in ghosts:
-    #         gx, gy = ghost.get_position()
-    #         ghost_dist = player_distances.get((gx, gy), MAP_WIDTH * MAP_HEIGHT)
-    #         total_ghost_distance += ghost_dist
-    #         min_ghost_distance = min(min_ghost_distance, ghost_dist)
-    #         if self.player.power_pellet_active and ghost_dist < 15 and not ghost.eyes_mode:
-    #             scared_ghosts_nearby += 1
-
-    #     # Find nearest dot using BFS
-    #     min_dot_distance = float('inf')
-    #     for (x, y), dist in player_distances.items():
-    #         if map_layout[y][x] == 25:
-    #             min_dot_distance = min(min_dot_distance, dist)
-    #     if min_dot_distance == float('inf'):
-    #         min_dot_distance = 0
-
-    #     # Find nearest power pellet using BFS
-    #     min_power_distance = float('inf')
-    #     for (x, y), dist in player_distances.items():
-    #         if map_layout[y][x] == 26:
-    #             min_power_distance = min(min_power_distance, dist)
-    #     if min_power_distance == float('inf'):
-    #         min_power_distance = 0
-
-    #     # Initialize reward accumulator
-    #     reward = 0
-
-    #     # --- Event-based rewards ---
-    #     if self.player.just_ate_dot:
-    #         reward += 12
-    #     if self.player.just_ate_power_pellet:
-    #         reward += 60   # 50 base + small bonus
-    #     if self.player.just_ate_ghost:
-    #         reward += 200
-    #     if self.player.just_died:
-    #         reward -= 350
-    #     if self.game_over:
-    #         reward -= 350
-    #     elif self.victory:
-    #         reward += 500
-
-    #     # --- Distance-based rewards ---
-    #     if self.player.power_pellet_active:
-    #         if scared_ghosts_nearby > 0:
-    #             reward += 15.0 / (min_ghost_distance + 1)
-    #         else:
-    #             reward -= 2.0
-    #     else:
-    #         if min_ghost_distance < 5:
-    #             reward -= 40.0 / (min_ghost_distance + 1)
-    #         elif min_ghost_distance < 10:
-    #             reward -= 15.0 / (min_ghost_distance + 1)
-    #         else:
-    #             reward -= 3.0 / (total_ghost_distance + 1)
-
-    #     # Encourage approaching dots/pellets
-    #     if min_dot_distance > 0:
-    #         reward += 1.5 / (min_dot_distance + 1)
-    #     if min_power_distance > 0:
-    #         reward += 7.5 / (min_power_distance + 1)
-
-    #     # --- Movement penalties / smoothing ---
-    #     # Step cost
-    #     reward -= 5
-    #     # Penalty for reversing direction too often
-    #     if self.player.just_reversed:
-    #         reward -= 6
-    #     # Penalty for standing still
-    #     if len(self.prev_positions) >= 2 and self.prev_positions[-1] == self.prev_positions[-2]:
-    #         reward -= 8
-    #     # Penalty for jiggling (A↔B↔A↔B)
-    #     reward += jiggle_penalty
-
-    #     # Penalty if next_direction faces wall
-    #     nx, ny = px + int(self.player.next_direction.x), py + int(self.player.next_direction.y)
-    #     if 0 <= nx < MAP_WIDTH and 0 <= ny < MAP_HEIGHT:
-    #         if 1 <= map_layout[ny][nx] <= 24:
-    #             reward -= 10
-
-    #     # --- Small positive reward for actual movement ---
-    #     if len(self.prev_positions) >= 2 and self.prev_positions[-1] != self.prev_positions[-2]:
-    #         reward += 1.5
-
-    #     reward -= 0.5
-    #     return reward
-
     def get_reward(self):
-        """
-        Optimized, lightweight, stable Pac-Man reward function.
-        Low computational cost + fast convergence.
-        """
+        px, py = self.player.get_position()
+        reward = 0.0
 
-        reward = 0
-
-        # =============================
-        #  TERMINAL EVENTS (highest priority)
-        # =============================
+        # End episode on any death
         if self.player.just_died:
-            return -200        # prevents suicide farming, but not too huge
-        if self.game_over:
-            return -350
-        if self.victory:
-            return +1200       # strong but not explosive → stable learning
+            self.game_over = True
+            return -150.0  # One-time death penalty
 
-        # =============================
-        #  POSITIVE EVENTS
-        # =============================
-        if self.player.just_ate_dot:
-            reward += 6
+        if self.victory:
+            return +1000.0
+
+        # Progress rewards
+        dots_eaten = self.player.count_dot - getattr(self.player, 'prev_dot_count', 0)
+        reward += dots_eaten * 10.0
+        self.player.prev_dot_count = self.player.count_dot
 
         if self.player.just_ate_power_pellet:
-            reward += 35
-
+            reward += 50
         if self.player.just_ate_ghost:
-            reward += 180
+            reward += 200
 
-        # =============================
-        #  MOVEMENT / ANTI-OSCILLATION
-        # =============================
-        px, py = self.player.get_position()
-        if not hasattr(self, "last_pos"):
-            self.last_pos = (px, py)
-
-        if (px, py) != self.last_pos:
-            reward += 0.8      # rewards exploring the map
-        else:
-            reward -= 1.5      # punishes jiggling
-
-        self.last_pos = (px, py)
-
-        # Always give a tiny survival tick
-        reward += 0.3
-
-        # =============================
-        #  GHOST DISTANCE SHAPING
-        #  (simple version for speed)
-        # =============================
-        ghosts = [self.red_ghost, self.orange_ghost, self.cyan_ghost, self.pink_ghost]
-        dists = self.get_bfs_distances_from_point((px, py))
-
-        min_ghost_dist = min(
-            dists.get(g.get_position(), 9999)
-            for g in ghosts
-            if not g.eyes_mode
-        )
+        # Distance-based rewards
+        player_distances = self.get_bfs_distances_from_point((px, py))
+        min_ghost_dist = min([player_distances.get(g.get_position(), 9999) for g in [self.red_ghost, self.orange_ghost, self.cyan_ghost, self.pink_ghost]])
+        min_dot_dist = min([player_distances.get((x,y), 9999) for y in range(MAP_HEIGHT) for x in range(MAP_WIDTH) if map_layout[y][x] == 25], default=0)
 
         if self.player.power_pellet_active:
-            # encourage chasing ghosts
-            reward += 6 / (min_ghost_dist + 1)
+            reward += 30.0 / (min_ghost_dist + 1)
         else:
-            # avoid ghosts
-            if min_ghost_dist < 4:
-                reward -= 18 / (min_ghost_dist + 1)
-            elif min_ghost_dist < 8:
-                reward -= 7 / (min_ghost_dist + 1)
-            else:
-                reward += 0.1
+            if min_ghost_dist < 6:
+                reward -= 40.0 / (min_ghost_dist + 1)
 
-        # =============================
-        #  DOT DISTANCE SHAPING
-        #  (minimalistic version)
-        # =============================
-        min_dot = float('inf')
-        for (x, y), dist in dists.items():
-            if map_layout[y][x] == 25:
-                min_dot = min(min_dot, dist)
+        # Always move toward dots
+        if min_dot_dist > 0:
+            reward += 3.0 / (min_dot_dist + 1)
 
-        if min_dot != float('inf'):
-            reward += 1.5 / (min_dot + 1)
+        # Small time wasting penalty
+        reward -= 0.6
 
-        # tiny action cost
-        reward -= 0.2
+        # Wall crash penalty
+        nx = px + int(self.player.next_direction.x)
+        ny = py + int(self.player.next_direction.y)
+        if not (0 <= nx < MAP_WIDTH and 0 <= ny < MAP_HEIGHT) or 1 <= map_layout[ny][nx] <= 24:
+            reward -= 8
 
         return reward
 
     def reset(self):
-        """Reset the game for RL episode restart."""
         self.reset_game()
         return self.get_state()
+
+    def step(self, action):
+        # Map action to direction
+        dirs = ["up", "down", "left", "right"]
+        self.player.set_direction(dirs[action])
+
+        # Update game
+        self.all_sprites.update()
+
+        # Check victory
+        if self.player.count_dot >= 242 and self.player.count_power >= 4:
+            self.victory = True
+
+        next_state = self.get_state()
+        reward = self.get_reward()
+        done = self.game_over or self.victory or self.step_count >= 2000
+        self.step_count += 1
+
+        return next_state, reward, done, {}
 
     def run(self):
         running = True
@@ -439,7 +259,7 @@ class Game:
                         elif (event.key == pygame.K_RETURN and self.lives <= 0) or event.key == pygame.K_ESCAPE:
                             running = False
             else:
-                # --- RL mode control ---
+                # RL mode control
                 action = self.agent.act(self.get_state())
                 if action == 0:
                     self.player.set_direction("up")
@@ -506,14 +326,14 @@ class Game:
                     else:
                         ahead_x, ahead_y = player_x, player_y
 
-                    # Step 2: Get the red ghost's position
+                    # Get the red ghost's position
                     red_x, red_y = self.red_ghost.get_position()
 
-                    # Step 3: Calculate the vector from the red ghost to the "2 tiles ahead" position
+                    # Calculate the vector from the red ghost to the "2 tiles ahead" position
                     vector_x = ahead_x - red_x
                     vector_y = ahead_y - red_y
 
-                    # Step 4: Double the vector to get the cyan ghost's target tile
+                    # Double the vector to get the cyan ghost's target tile
                     cyan_target_x = red_x + 2 * vector_x
                     cyan_target_y = red_y + 2 * vector_y
                     cyan_target = (cyan_target_x, cyan_target_y)
@@ -591,15 +411,14 @@ class Game:
             self.all_sprites.update()
             self.all_sprites.draw(self.screen)
 
-                    # --- reward collection for RL (if rl_mode) ---
+            # Reward collection for RL
             if rl_mode:
                 if self.step_count % 400 == 0: pygame.display.flip()
-                # get step reward and accumulate; then reset internal self.reward so next step is fresh
+                # get step reward and accumulate
                 step_reward = self.get_reward()
-                # If your get_reward uses self.reward internally, ensure it does not accumulate across steps.
                 # Accumulate into per-episode total:
                 self.total_reward += step_reward
-                # reset any internal reward accumulator to avoid double-counting next frame:
+                # Reset any internal reward to avoid double-counting next frame
                 try:
                     self.reward = 0
                 except Exception:

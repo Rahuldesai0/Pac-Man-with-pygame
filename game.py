@@ -325,84 +325,90 @@ class Game:
 
     def get_reward(self):
         """
-        Stable Pac-Man reward function optimized for fast learning
-        without hurting convergence quality.
+        Optimized, lightweight, stable Pac-Man reward function.
+        Low computational cost + fast convergence.
         """
 
         reward = 0
 
-        # --- TERMINAL EVENTS (highest priority) ---
+        # =============================
+        #  TERMINAL EVENTS (highest priority)
+        # =============================
         if self.player.just_died:
-            return -250   # strong negative – prevents suicide farming
+            return -200        # prevents suicide farming, but not too huge
         if self.game_over:
-            return -400   # finishing with loss is worse than dying once
+            return -350
         if self.victory:
-            return +1500  # strongest single reward
+            return +1200       # strong but not explosive → stable learning
 
-
-        # --- POSITIVE EVENTS ---
+        # =============================
+        #  POSITIVE EVENTS
+        # =============================
         if self.player.just_ate_dot:
-            reward += 8       # encourages clearing maze fast
+            reward += 6
 
         if self.player.just_ate_power_pellet:
-            reward += 40      # encourages strategic pellet timing
+            reward += 35
 
         if self.player.just_ate_ghost:
-            reward += 200     # high reward but not insane (keeps stability)
+            reward += 180
 
-
-        # --- SURVIVAL + MOVEMENT REWARDS ---
-        # mild survival reward
-        reward += 0.5
-
-        # reward for actually changing tiles (not oscillating)
+        # =============================
+        #  MOVEMENT / ANTI-OSCILLATION
+        # =============================
         px, py = self.player.get_position()
         if not hasattr(self, "last_pos"):
             self.last_pos = (px, py)
-        if (px, py) != self.last_pos:
-            reward += 1.0     # encourages exploration
-        else:
-            reward -= 2.0     # discourages standing still
 
-        # store for next step
+        if (px, py) != self.last_pos:
+            reward += 0.8      # rewards exploring the map
+        else:
+            reward -= 1.5      # punishes jiggling
+
         self.last_pos = (px, py)
 
+        # Always give a tiny survival tick
+        reward += 0.3
 
-        # --- GHOST DISTANCE SHAPING (stabilizing component) ---
+        # =============================
+        #  GHOST DISTANCE SHAPING
+        #  (simple version for speed)
+        # =============================
         ghosts = [self.red_ghost, self.orange_ghost, self.cyan_ghost, self.pink_ghost]
-        player_pos = (px, py)
-        dists = self.get_bfs_distances_from_point(player_pos)
+        dists = self.get_bfs_distances_from_point((px, py))
 
         min_ghost_dist = min(
-            dists.get(ghost.get_position(), 9999)
-            for ghost in ghosts
-            if not ghost.eyes_mode
+            dists.get(g.get_position(), 9999)
+            for g in ghosts
+            if not g.eyes_mode
         )
 
         if self.player.power_pellet_active:
-            # move TOWARD ghosts when powered
-            reward += (10 / (min_ghost_dist + 1))
+            # encourage chasing ghosts
+            reward += 6 / (min_ghost_dist + 1)
         else:
-            # move AWAY from ghosts when normal
+            # avoid ghosts
             if min_ghost_dist < 4:
-                reward -= 30 / (min_ghost_dist + 1)  # strong danger zone
+                reward -= 18 / (min_ghost_dist + 1)
             elif min_ghost_dist < 8:
-                reward -= 10 / (min_ghost_dist + 1)
+                reward -= 7 / (min_ghost_dist + 1)
             else:
-                reward += 0.2   # safe zone small reward
+                reward += 0.1
 
-
-        # --- DOT DISTANCE SHAPING (accelerates learning) ---
-        min_dot_dist = float('inf')
+        # =============================
+        #  DOT DISTANCE SHAPING
+        #  (minimalistic version)
+        # =============================
+        min_dot = float('inf')
         for (x, y), dist in dists.items():
             if map_layout[y][x] == 25:
-                min_dot_dist = min(min_dot_dist, dist)
+                min_dot = min(min_dot, dist)
 
-        if min_dot_dist != float('inf'):
-            reward += 2.0 / (min_dot_dist + 1)
+        if min_dot != float('inf'):
+            reward += 1.5 / (min_dot + 1)
 
-        # Small step cost (keeps actions efficient)
-        reward -= 0.3
+        # tiny action cost
+        reward -= 0.2
 
         return reward
 
@@ -584,11 +590,10 @@ class Game:
 
             self.all_sprites.update()
             self.all_sprites.draw(self.screen)
-            if rl_mode and self.step_count % 400 == 0: pygame.display.flip()
-            else: pygame.display.flip()
 
                     # --- reward collection for RL (if rl_mode) ---
             if rl_mode:
+                if self.step_count % 400 == 0: pygame.display.flip()
                 # get step reward and accumulate; then reset internal self.reward so next step is fresh
                 step_reward = self.get_reward()
                 # If your get_reward uses self.reward internally, ensure it does not accumulate across steps.
@@ -613,7 +618,9 @@ class Game:
                     self.agent.update_target()
                     running = False
                     
-                self.clock.tick()
-            else: self.clock.tick(60)
+                self.clock.tick(500)
+            else:
+                pygame.display.flip() 
+                self.clock.tick(60)
 
         pygame.quit()
